@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>LoL人狼 - TOP</title>
+</head>
+<body>
+  <h1>LoL人狼</h1>
+  <label for="memberSelect">名前を選択：</label>
+  <select id="memberSelect"></select>
+  <button onclick="confirmName()">確認</button>
+  <br><br>
+  <button onclick="location.href='/settings'">設定</button>
+
+  <script src="script.js"></script>
+  <script>
+    async function loadMembers() {
+      const res = await fetch('/api/members');
+      const names = await res.json();
+      const select = document.getElementById('memberSelect');
+      names.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      // 観戦者追加
+      const obs = document.createElement('option');
+      obs.value = '__observer__';
+      obs.textContent = '観戦者';
+      select.appendChild(obs);
+    }
+
+    function confirmName() {
+      const name = document.getElementById('memberSelect').value;
+      if (confirm(`あなたは ${name} さんで間違いないですか？`)) {
+        if (name === '__observer__') {
+          location.href = '/observer';
+        } else {
+          location.href = `/member/${encodeURIComponent(name)}`;
+        }
+      }
+    }
+
+    loadMembers();
+  </script>
+</body>
+</html>

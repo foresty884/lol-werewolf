@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>観戦者ページ</title>
+</head>
+<body>
+  <h2>全メンバーの情報</h2>
+  <div id="allInfo"></div>
+
+  <script>
+    async function loadAll() {
+      const res = await fetch('/api/all');
+      const members = await res.json();
+      const div = document.getElementById('allInfo');
+      div.innerHTML = members.map(m => `
+        <h4>${m.name}（${m.team}チーム）</h4>
+        <p>役職：${m.role}</p>
+        <p>タスク：</p><ul>${m.tasks.map(t => `<li>${t}</li>`).join('')}</ul>
+      `).join('');
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>メンバー情報 - LoL人狼</title>
+</head>
+<body>
+  <h2>あなたの情報</h2>
+  <div id="info"></div>
+
+  <script>
+    async function loadMember() {
+      const name = decodeURIComponent(location.pathname.split('/').pop());
+      const res = await fetch(`/api/member/${name}`);
+      const data = await res.json();
+      const div = document.getElementById('info');
+      if (!data.name) {
+        div.innerText = '情報が見つかりません。';
+        return;
+      }
+      div.innerHTML = `<p>名前：${data.name}</p>
+        <p>チーム：${data.team}</p>
+        <p>役職：${data.role}</p>
+        <p>タスク：</p><ul>${data.tasks.map(t => `<li>${t}</li>`).join('')}</ul>`;
+    }
+
+    loadMember();
+  </script>
+</body>
+</html>

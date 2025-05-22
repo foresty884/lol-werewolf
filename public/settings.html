@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>設定 - LoL人狼</title>
+</head>
+<body>
+  <h2>設定画面</h2>
+
+  <form id="settingForm">
+    <h3>Aチーム</h3>
+    <div id="aTeamInputs"></div>
+    <h3>Bチーム</h3>
+    <div id="bTeamInputs"></div>
+
+    <h3>GM</h3>
+    <label><input type="radio" name="gmMode" value="true"> GMあり</label>
+    <label><input type="radio" name="gmMode" value="false" checked> GMなし</label>
+
+    <div id="gmOffSection" style="display: none;">
+      <h4>大タスク（改行区切り）</h4>
+      <textarea id="tasksBig"></textarea><br>
+      <label>大タスク数：<input type="number" id="numBigTasks" value="1" min="0"></label><br>
+
+      <h4>小タスク（改行区切り）</h4>
+      <textarea id="tasksSmall"></textarea><br>
+      <label>小タスク数：<input type="number" id="numSmallTasks" value="1" min="0"></label><br>
+
+      <label>人狼：<input type="number" id="numWolves" value="2" min="1" max="4"></label><br>
+      <label>村人：<input type="number" id="numVillagers" value="3" min="1" max="4"></label><br>
+    </div>
+
+    <div id="gmOnSection" style="display: none;">
+      <h4>各メンバーの役職・タスク</h4>
+      <div id="gmMemberInputs"></div>
+    </div>
+
+    <br>
+    <button type="submit">設定</button>
+    <button type="button" onclick="location.href='/'">取消</button>
+    <div id="error" style="color:red;"></div>
+  </form>
+
+  <script src="script.js"></script>
+</body>
+</html>
