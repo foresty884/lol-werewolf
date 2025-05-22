@@ -2,18 +2,44 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>あなたの情報</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoL人狼 - メンバー用ページ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="centered">
-    <h1 id="member-name"></h1>
-    <h2>役職：<span id="role"></span></h2>
-    <h3>大タスク</h3>
-    <ul id="large-tasks"></ul>
-    <h3>小タスク</h3>
-    <ul id="small-tasks"></ul>
+  <div class="container">
+    <h1>あなたの情報</h1>
+    <div id="memberInfo">
+      <!-- メンバーの役職とタスクがここに表示されます -->
+    </div>
+    <button onclick="window.history.back()">戻る</button>
   </div>
-  <script src="script.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const memberId = window.location.pathname.split('/').pop();
+      const response = await fetch(`/member/${memberId}`);
+      const data = await response.json();
+
+      const memberInfo = document.getElementById('memberInfo');
+      if (data) {
+        memberInfo.innerHTML = `
+          <h3>名前: ${data.name}</h3>
+          <p>役職: ${data.role}</p>
+          <h4>タスク</h4>
+          <h5>大タスク</h5>
+          <ul>
+            ${data.tasks.bigTasks.map(task => `<li>${task}</li>`).join('')}
+          </ul>
+          <h5>小タスク</h5>
+          <ul>
+            ${data.tasks.smallTasks.map(task => `<li>${task}</li>`).join('')}
+          </ul>
+        `;
+      } else {
+        memberInfo.innerHTML = '<p>情報が見つかりません。</p>';
+      }
+    });
+  </script>
 </body>
 </html>

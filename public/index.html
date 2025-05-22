@@ -2,20 +2,19 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LoL人狼 - TOP</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="centered">
+  <div class="container">
     <h1>LoL人狼</h1>
-    <div>
-      <label for="player-select">名前を選択：</label>
-      <select id="player-select"></select>
-      <button onclick="confirmSelection()">確認</button>
-    </div>
-    <div style="margin-top: 20px;">
-      <button onclick="location.href='settings.html'">設定</button>
-    </div>
+    <label for="memberSelect">メンバー名を選択:</label>
+    <select id="memberSelect">
+      <!-- メンバー名のオプションがここに動的に追加されます -->
+    </select>
+    <button id="confirmBtn">確認</button>
+    <button id="settingsBtn">設定</button>
   </div>
   <script src="script.js"></script>
 </body>
