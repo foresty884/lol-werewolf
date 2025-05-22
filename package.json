@@ -1,13 +1,14 @@
 {
   "name": "lol-werewolf",
   "version": "1.0.0",
+  "description": "League of Legends Werewolf Custom Game Support Tool",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mongodb": "^5.7.0"
+    "mongoose": "^6.3.3",
+    "dotenv": "^16.0.3"
   }
 }

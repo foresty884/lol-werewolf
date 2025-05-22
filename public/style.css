@@ -1,64 +1,37 @@
 body {
-  background-color: #cceeff;
-  font-family: sans-serif;
+  background-color: #cce4f6;
+  font-family: Arial, sans-serif;
   text-align: center;
+  margin: 0;
+  padding: 0;
 }
 
 .container {
-  width: 90%;
-  max-width: 800px;
-  margin: 0 auto;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
+  margin-top: 50px;
 }
 
-input.short-input {
-  width: 50px !important; /* 優先度強化 */
+select, button, textarea, input[type="text"], input[type="number"] {
+  margin: 10px;
+  padding: 8px;
+  font-size: 16px;
+}
+
+table {
+  margin: 0 auto;
+  border-collapse: collapse;
+  width: 80%;
+}
+
+th, td {
+  border: 1px solid #999;
+  padding: 10px;
   text-align: center;
 }
 
-textarea, input[type="text"], select {
-  width: 90%;
-  margin: 5px auto;
-  padding: 5px;
+h1, h2 {
+  color: #003366;
 }
 
-input[type="number"] {
-  padding: 5px;
-}
-
-.team-config {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.task-count, .roles {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 10px 0;
-}
-
-.gm-input {
-  margin: 10px 0;
-}
-
-.gm-settings textarea {
-  height: 200px;
-}
-
-label {
-  display: block;
+.team-section input {
   margin-bottom: 5px;
-}
-
-.gm-settings label {
-  margin-top: 20px;
-  margin-bottom: 5px;
-}
-
-.buttons {
-  margin-top: 20px;
 }

@@ -2,16 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LoL人狼 - 設定</title>
+  <title>設定画面</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     <h1>設定画面</h1>
-
     <form id="settingsForm">
-      <div class="team-config">
+      <div class="team-section" style="display: flex; gap: 40px; justify-content: center;">
         <div>
           <h3>Aチーム</h3>
           <div id="teamAInputs"></div>
@@ -23,45 +21,38 @@
       </div>
 
       <div>
-        <label>GMモード:</label>
-        <label><input type="radio" name="gmMode" value="yes"> GM有り</label>
-        <label><input type="radio" name="gmMode" value="no" checked> GM無し</label>
+        <p>GMモード：</p>
+        <label><input type="radio" name="gmMode" value="yes"> 有り</label>
+        <label><input type="radio" name="gmMode" value="no" checked> 無し</label>
       </div>
 
-      <div id="gmNoSettings" class="gm-settings">
-        <h3>GM無し設定</h3>
-        
-        <label>大タスク（改行で複数）：</label>
-        <textarea id="bigTasks"></textarea>
+      <div id="gmSettings" style="display:none;">
+        <h3>GMによる役職・タスク設定</h3>
+        <div id="gmMemberSettings"></div>
+      </div>
 
-        <br> <!-- 改行を追加 -->
+      <div id="nogmSettings">
+        <h3>大タスク一覧</h3>
+        <textarea id="largeTasks" rows="6" cols="60"></textarea>
 
-        <label>小タスク（改行で複数）：</label>
-        <textarea id="smallTasks"></textarea>
+        <h3>小タスク一覧</h3>
+        <textarea id="smallTasks" rows="6" cols="60"></textarea>
 
-        <div class="task-count">
-          <label>大タスク数:</label>
-          <input type="number" id="bigTaskCount" min="0" class="short-input">
-          <label>小タスク数:</label>
-          <input type="number" id="smallTaskCount" min="0" class="short-input">
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 1em;">
+          <label>大タスク数：<input type="number" id="largeTaskCount" min="0"></label>
+          <label>小タスク数：<input type="number" id="smallTaskCount" min="0"></label>
         </div>
 
-        <div class="roles">
-          <label>村人:</label>
-          <input type="number" id="villagerCount" value="3" min="1" max="4" class="short-input">
-          <label>人狼:</label>
-          <input type="number" id="werewolfCount" value="2" min="1" max="4" class="short-input">
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 1em;">
+          <label>村人：<input type="number" id="villagerCount" value="3" min="1" max="4"></label>
+          <label>人狼：<input type="number" id="werewolfCount" value="2" min="1" max="4"></label>
         </div>
       </div>
 
-      <div id="gmYesSettings" class="gm-settings" style="display:none">
-        <h3>GM有り設定</h3>
-        <div id="gmRoleTaskInputs"></div>
-      </div>
-
-      <div class="buttons">
+      <div style="margin-top: 20px;">
         <button type="submit">設定</button>
-        <button type="button" onclick="location.href='index.html'">取消</button>
+        <button type="button" onclick="window.location.href='index.html'">キャンセル</button>
+        <button type="button" id="resetSettings">設定リセット</button>
       </div>
     </form>
   </div>

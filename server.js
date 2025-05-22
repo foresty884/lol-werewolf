@@ -1,64 +1,30 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const { MongoClient } = require('mongodb');
-require('dotenv').config();
+const mongoose = require('mongoose');
+const path = require('path');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const mongoUri = process.env.MONGO_URI;
 
-app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
+// MongoDB接続
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.log(err));
 
-// 設定画面のルート
-app.get('/settings', (req, res) => {
-  res.sendFile(__dirname + '/public/settings.html');
-});
-
-// メンバー用ページのルート
-app.get('/member/:id', async (req, res) => {
-  const memberId = req.params.id;
-  const client = new MongoClient(mongoUri);
-  try {
-    await client.connect();
-    const db = client.db('lol-werewolf');
-    const members = db.collection('members');
-    const member = await members.findOne({ id: memberId });
-    if (member) {
-      res.sendFile(__dirname + '/public/member.html');
-    } else {
-      res.status(404).send('メンバーが見つかりません');
-    }
-  } finally {
-    await client.close();
-  }
-});
-
-// 観戦者ページのルート
-app.get('/observer', (req, res) => {
-  res.sendFile(__dirname + '/public/observer.html');
-});
-
-// 設定の保存
-app.post('/settings', async (req, res) => {
-  const { teams, gmMode, tasks, roles } = req.body;
-  const client = new MongoClient(mongoUri);
-  try {
-    await client.connect();
-    const db = client.db('lol-werewolf');
-    const settings = db.collection('settings');
-    await settings.deleteMany({});
-    await settings.insertOne({ teams, gmMode, tasks, roles });
-    res.status(200).send('設定が保存されました');
-  } finally {
-    await client.close();
-  }
-});
+// ルーティング
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
+app.get('/member/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'member.html')));
+app.get('/observer', (req, res) => res.sendFile(path.join(__dirname, 'public', 'observer.html')));
 
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });

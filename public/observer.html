@@ -1,53 +1,55 @@
+<!-- public/observer.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LoL人狼 - 観戦者ページ</title>
+  <title>観戦者用ページ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-    <h1>観戦者ページ</h1>
-    <div id="observerInfo">
-      <!-- 観戦者向けの情報がここに表示されます -->
+    <h1>観戦者ビュー</h1>
+    <div id="teamA">
+      <h2>Aチーム</h2>
+      <table>
+        <thead><tr><th>名前</th><th>役職</th><th>タスク</th></tr></thead>
+        <tbody id="teamA-list"></tbody>
+      </table>
     </div>
-    <button onclick="window.history.back()">戻る</button>
+    <div id="teamB">
+      <h2>Bチーム</h2>
+      <table>
+        <thead><tr><th>名前</th><th>役職</th><th>タスク</th></tr></thead>
+        <tbody id="teamB-list"></tbody>
+      </table>
+    </div>
   </div>
-  
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const response = await fetch('/settings');
-      const data = await response.json();
+    const data = JSON.parse(localStorage.getItem('lolWerewolfData') || '{}');
+    const members = JSON.parse(localStorage.getItem('lolWerewolfMembers') || '[]');
 
-      const observerInfo = document.getElementById('observerInfo');
-      if (data) {
-        observerInfo.innerHTML = `
-          <h2>Aチーム</h2>
-          <ul>
-            ${data.teams.A.map(member => `
-              <li>
-                ${member.name} - 役職: ${member.role} <br>
-                大タスク: ${member.tasks.bigTasks.join(', ')} <br>
-                小タスク: ${member.tasks.smallTasks.join(', ')}
-              </li>
-            `).join('')}
-          </ul>
-          <h2>Bチーム</h2>
-          <ul>
-            ${data.teams.B.map(member => `
-              <li>
-                ${member.name} - 役職: ${member.role} <br>
-                大タスク: ${member.tasks.bigTasks.join(', ')} <br>
-                小タスク: ${member.tasks.smallTasks.join(', ')}
-              </li>
-            `).join('')}
-          </ul>
-        `;
+    const teamA = document.getElementById('teamA-list');
+    const teamB = document.getElementById('teamB-list');
+
+    members.forEach(name => {
+      const info = data[name];
+      if (!info) return;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name.split('：')[1]}</td>
+        <td>${info.role}</td>
+        <td>${info.tasks.join('<br>')}</td>
+      `;
+      if (name.startsWith("Aチーム")) {
+        teamA.appendChild(tr);
       } else {
-        observerInfo.innerHTML = '<p>設定情報が見つかりません。</p>';
+        teamB.appendChild(tr);
       }
     });
   </script>
+  <br>
+  <button id="backToTopBtn">TOPに戻る</button>
+  <script src="script.js"></script>
 </body>
 </html>
