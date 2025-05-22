@@ -1,0 +1,48 @@
+body {
+  background-color: #d0ebff; /* パステルブルー */
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.centered {
+  text-align: center;
+  margin: 40px auto;
+  max-width: 700px;
+}
+
+select, button, input, textarea {
+  margin: 10px;
+  padding: 8px;
+  font-size: 1rem;
+}
+
+textarea.large {
+  width: 90%;
+  height: 10em;
+}
+
+.team-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.btn-row {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table, th, td {
+  border: 1px solid #444;
+}
+
+th, td {
+  padding: 5px;
+  text-align: center;
+}

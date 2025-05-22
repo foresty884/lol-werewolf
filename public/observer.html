@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>観戦者ページ</title>
+  <meta charset="UTF-8">
+  <title>観戦者画面</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>全メンバーの情報</h2>
-  <div id="allInfo"></div>
-
-  <script>
-    async function loadAll() {
-      const res = await fetch('/api/all');
-      const members = await res.json();
-      const div = document.getElementById('allInfo');
-      div.innerHTML = members.map(m => `
-        <h4>${m.name}（${m.team}チーム）</h4>
-        <p>役職：${m.role}</p>
-        <p>タスク：</p><ul>${m.tasks.map(t => `<li>${t}</li>`).join('')}</ul>
-      `).join('');
-    }
-
-    loadAll();
-  </script>
+  <div class="centered">
+    <h1>観戦者用一覧</h1>
+    <div class="team-columns">
+      <div>
+        <h2>Aチーム</h2>
+        <table id="a-team-table">
+          <thead><tr><th>名前</th><th>役職</th><th>大タスク</th><th>小タスク</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div>
+        <h2>Bチーム</h2>
+        <table id="b-team-table">
+          <thead><tr><th>名前</th><th>役職</th><th>大タスク</th><th>小タスク</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>

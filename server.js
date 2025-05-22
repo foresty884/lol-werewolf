@@ -1,116 +1,70 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const path = require('path');
-const cors = require('cors');
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+// MongoDB接続
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-
-const memberSchema = new mongoose.Schema({
+const playerSchema = new mongoose.Schema({
   name: String,
   team: String,
   role: String,
-  tasks: [String]
+  largeTasks: [String],
+  smallTasks: [String]
 });
 
-const settingSchema = new mongoose.Schema({
-  aTeam: [String],
-  bTeam: [String],
-  gmMode: Boolean,
-  tasksBig: [String],
-  tasksSmall: [String],
-  numBigTasks: Number,
-  numSmallTasks: Number,
-  numWolves: Number,
-  numVillagers: Number
+const Player = mongoose.model("Player", playerSchema);
+
+app.use(bodyParser.json());
+app.use(express.static("public"));
+
+// API: 設定保存
+app.post("/api/setup", async (req, res) => {
+  const { aTeam, bTeam, largeTasks, smallTasks, largeCount, smallCount, villagerCount, werewolfCount } = req.body;
+
+  await Player.deleteMany({});
+  const allPlayers = [...aTeam.map(n => ({ name: n, team: "A" })), ...bTeam.map(n => ({ name: n, team: "B" }))];
+
+  // 役職ランダム割当
+  const roles = Array(villagerCount).fill("村人").concat(Array(werewolfCount).fill("人狼"));
+  roles.sort(() => Math.random() - 0.5);
+
+  // タスクシャッフル
+  const shuffledLarge = [...largeTasks].sort(() => Math.random() - 0.5);
+  const shuffledSmall = [...smallTasks].sort(() => Math.random() - 0.5);
+
+  const playerDocs = allPlayers.map((p, i) => {
+    const startL = i * largeCount;
+    const startS = i * smallCount;
+    return {
+      name: p.name,
+      team: p.team,
+      role: roles[i],
+      largeTasks: shuffledLarge.slice(startL, startL + largeCount),
+      smallTasks: shuffledSmall.slice(startS, startS + smallCount)
+    };
+  });
+
+  await Player.insertMany(playerDocs);
+  res.status(200).json({ ok: true });
 });
 
-const Member = mongoose.model('Member', memberSchema);
-const Setting = mongoose.model('Setting', settingSchema);
-
-// ページルーティング
-app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/settings', (_, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
-app.get('/member/:name', (_, res) => res.sendFile(path.join(__dirname, 'public', 'member.html')));
-app.get('/observer', (_, res) => res.sendFile(path.join(__dirname, 'public', 'observer.html')));
-
-// API：設定取得
-app.get('/api/settings', async (_, res) => {
-  const setting = await Setting.findOne({});
-  res.json(setting || {});
+// API: 名前一覧取得
+app.get("/api/players", async (req, res) => {
+  const players = await Player.find({});
+  res.json({ players });
 });
 
-// API：設定保存
-app.post('/api/settings', async (req, res) => {
-  await Setting.deleteMany({});
-  await Member.deleteMany({});
-  const s = req.body;
-  await Setting.create(s);
-
-  const members = [...s.aTeam.map(n => ({ name: n, team: 'A' })), ...s.bTeam.map(n => ({ name: n, team: 'B' }))];
-
-  if (s.gmMode) {
-    for (const m of members) {
-      await Member.create({
-        name: m.name,
-        team: m.team,
-        role: s.roles[m.name] || '村人',
-        tasks: s.tasks[m.name] || []
-      });
-    }
-  } else {
-    // ランダム割り当て（GM無し）
-    const shuffled = members.sort(() => 0.5 - Math.random());
-    const wolves = shuffled.slice(0, s.numWolves);
-    const villagers = shuffled.slice(s.numWolves);
-
-    const allBigTasks = [...s.tasksBig];
-    const allSmallTasks = [...s.tasksSmall];
-
-    const assigned = [...wolves, ...villagers];
-    for (const m of assigned) {
-      const role = wolves.includes(m) ? '人狼' : '村人';
-
-      const big = allBigTasks.splice(0, s.numBigTasks);
-      const small = allSmallTasks.splice(0, s.numSmallTasks);
-
-      await Member.create({
-        name: m.name,
-        team: m.team,
-        role,
-        tasks: [...big, ...small]
-      });
-    }
-  }
-
-  res.json({ success: true });
+// API: 個別情報取得
+app.get("/api/player/:name", async (req, res) => {
+  const player = await Player.findOne({ name: req.params.name });
+  if (!player) return res.status(404).json({ error: "not found" });
+  res.json(player);
 });
 
-// API：メンバー取得
-app.get('/api/members', async (_, res) => {
-  const members = await Member.find({});
-  res.json(members.map(m => m.name));
-});
-
-// API：個別メンバー情報
-app.get('/api/member/:name', async (req, res) => {
-  const member = await Member.findOne({ name: req.params.name });
-  res.json(member || {});
-});
-
-// API：全員の情報（観戦者用）
-app.get('/api/all', async (_, res) => {
-  const all = await Member.find({});
-  res.json(all);
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

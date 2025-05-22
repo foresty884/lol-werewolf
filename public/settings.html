@@ -1,46 +1,62 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>設定 - LoL人狼</title>
+  <meta charset="UTF-8">
+  <title>設定画面</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>設定画面</h2>
+  <div class="centered">
+    <h1>設定画面</h1>
+    <form id="settings-form">
+      <div class="team-columns">
+        <div>
+          <h3>Aチーム</h3>
+          <input type="text" name="aTeam[]" placeholder="メンバー1"><br>
+          <input type="text" name="aTeam[]" placeholder="メンバー2"><br>
+          <input type="text" name="aTeam[]" placeholder="メンバー3"><br>
+          <input type="text" name="aTeam[]" placeholder="メンバー4"><br>
+          <input type="text" name="aTeam[]" placeholder="メンバー5">
+        </div>
+        <div>
+          <h3>Bチーム</h3>
+          <input type="text" name="bTeam[]" placeholder="メンバー1"><br>
+          <input type="text" name="bTeam[]" placeholder="メンバー2"><br>
+          <input type="text" name="bTeam[]" placeholder="メンバー3"><br>
+          <input type="text" name="bTeam[]" placeholder="メンバー4"><br>
+          <input type="text" name="bTeam[]" placeholder="メンバー5">
+        </div>
+      </div>
 
-  <form id="settingForm">
-    <h3>Aチーム</h3>
-    <div id="aTeamInputs"></div>
-    <h3>Bチーム</h3>
-    <div id="bTeamInputs"></div>
+      <div>
+        <label>GMモード：</label>
+        <input type="radio" name="gmMode" value="true">有り
+        <input type="radio" name="gmMode" value="false" checked>無し
+      </div>
 
-    <h3>GM</h3>
-    <label><input type="radio" name="gmMode" value="true"> GMあり</label>
-    <label><input type="radio" name="gmMode" value="false" checked> GMなし</label>
+      <div id="gm-none-options">
+        <div>
+          <label>大タスク：</label><br>
+          <textarea id="largeTasks" class="large" name="largeTasks"></textarea>
+        </div>
+        <div>
+          <label>小タスク：</label><br>
+          <textarea id="smallTasks" class="large" name="smallTasks"></textarea>
+        </div>
+        <div>
+          <label>大タスク数（各人）：<input type="number" name="largeCount" min="0"></label><br>
+          <label>小タスク数（各人）：<input type="number" name="smallCount" min="0"></label><br>
+          <label>村人人数：<input type="number" name="villagerCount" min="0" max="5" value="3"></label><br>
+          <label>人狼人数：<input type="number" name="werewolfCount" min="0" max="5" value="2"></label>
+        </div>
+      </div>
 
-    <div id="gmOffSection" style="display: none;">
-      <h4>大タスク（改行区切り）</h4>
-      <textarea id="tasksBig"></textarea><br>
-      <label>大タスク数：<input type="number" id="numBigTasks" value="1" min="0"></label><br>
-
-      <h4>小タスク（改行区切り）</h4>
-      <textarea id="tasksSmall"></textarea><br>
-      <label>小タスク数：<input type="number" id="numSmallTasks" value="1" min="0"></label><br>
-
-      <label>人狼：<input type="number" id="numWolves" value="2" min="1" max="4"></label><br>
-      <label>村人：<input type="number" id="numVillagers" value="3" min="1" max="4"></label><br>
-    </div>
-
-    <div id="gmOnSection" style="display: none;">
-      <h4>各メンバーの役職・タスク</h4>
-      <div id="gmMemberInputs"></div>
-    </div>
-
-    <br>
-    <button type="submit">設定</button>
-    <button type="button" onclick="location.href='/'">取消</button>
-    <div id="error" style="color:red;"></div>
-  </form>
-
+      <div class="btn-row">
+        <button type="submit">設定</button>
+        <button type="button" onclick="location.href='index.html'">取消</button>
+      </div>
+    </form>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
