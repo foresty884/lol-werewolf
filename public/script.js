@@ -216,3 +216,51 @@ function setupBackToTopButton() {
     });
   }
 }
+
+async function saveSettings(settings) {
+  try {
+    const response = await fetch("/api/save-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Unknown error");
+    }
+
+    console.log("Settings saved successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("Failed to save settings:", error.message);
+    throw error;
+  }
+}
+
+async function resetSettings() {
+  try {
+    const response = await fetch("/api/reset-settings", { method: "DELETE" });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Unknown error");
+    }
+
+    console.log("Settings reset successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("Failed to reset settings:", error.message);
+    throw error;
+  }
+}
