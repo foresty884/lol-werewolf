@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,6 +25,14 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
 // ミドルウェア設定
 app.use(cors());
 app.use(bodyParser.json());
+
+// 静的ファイルを配信するための設定
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ルートアクセス時に index.html を返す
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // データモデルの定義
 const taskSchema = new mongoose.Schema({
