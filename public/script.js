@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
   const path = location.pathname;
-
   if (path.endsWith('settings.html')) {
     setupSettingsPage();
   } else if (path.endsWith('index.html') || path === '/' || path === '/index') {
@@ -11,27 +10,55 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function setupSettingsPage() {
+async function fetchMembers() {
+  const res = await fetch('http://localhost:3000/api/members');
+  if (!res.ok) throw new Error('Failed to fetch members');
+  return await res.json();
+}
+
+async function saveMembers(members) {
+  const res = await fetch('http://localhost:3000/api/members', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ members }),
+  });
+  if (!res.ok) throw new Error('Failed to save members');
+  return await res.json();
+}
+
+async function fetchSettings() {
+  const res = await fetch('http://localhost:3000/api/settings');
+  if (!res.ok) throw new Error('Failed to fetch settings');
+  return await res.json();
+}
+
+async function saveSettings(settings) {
+  const res = await fetch('http://localhost:3000/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error('Failed to save settings');
+  return await res.json();
+}
+
+async function setupSettingsPage() {
+  // メンバー入力欄生成
   const teamAInputs = document.getElementById('teamAInputs');
   const teamBInputs = document.getElementById('teamBInputs');
-  const gmArea = document.getElementById('gmSettings');
-  const nonGmArea = document.getElementById('nogmSettings');
-
-  // 入力欄初期化
   teamAInputs.innerHTML = '';
   teamBInputs.innerHTML = '';
-
   for (let i = 1; i <= 5; i++) {
     teamAInputs.innerHTML += `<input type="text" id="teamA_${i}" placeholder="Aチーム ${i}人目"><br>`;
     teamBInputs.innerHTML += `<input type="text" id="teamB_${i}" placeholder="Bチーム ${i}人目"><br>`;
   }
 
-  // モード変更イベント登録
+  // モード切り替えイベント
   document.querySelectorAll('input[name="gmMode"]').forEach(radio => {
     radio.addEventListener('change', handleModeChange);
   });
 
-  // メンバー入力変更時にGM設定更新（GMモードの場合のみ）
+  // メンバー入力変更時のGM設定更新
   for (let i = 1; i <= 5; i++) {
     document.getElementById(`teamA_${i}`).addEventListener('input', () => {
       if (isGmMode()) generateGmMemberSettings();
@@ -41,25 +68,46 @@ function setupSettingsPage() {
     });
   }
 
-  document.getElementById('settingsForm').addEventListener('submit', handleSettingsSubmit);
+  // 設定復元
+  try {
+    const members = await fetchMembers();
+    if (members.length === 10) {
+      for (let i = 0; i < 5; i++) {
+        document.getElementById(`teamA_${i + 1}`).value = members[i * 2].name.replace('Aチーム：', '');
+        document.getElementById(`teamB_${i + 1}`).value = members[i * 2 + 1].name.replace('Bチーム：', '');
+      }
+    }
 
-  // 保存設定の復元
-  restoreSettings();
+    const settings = await fetchSettings();
+    if (settings.lolWerewolfMode === 'gm') {
+      document.querySelector('input[value="yes"]').checked = true;
+      handleModeChange({ target: { value: 'yes' } });
+    } else {
+      document.querySelector('input[value="no"]').checked = true;
+      handleModeChange({ target: { value: 'no' } });
 
-  // リセットボタン設定
+      document.getElementById('largeTasks').value = (settings.bigTasks || []).join('\n');
+      document.getElementById('smallTasks').value = (settings.smallTasks || []).join('\n');
+      document.getElementById('largeTaskCount').value = settings.bigCount || 1;
+      document.getElementById('smallTaskCount').value = settings.smallCount || 1;
+      document.getElementById('villagerCount').value = settings.villagers || 3;
+      document.getElementById('werewolfCount').value = settings.werewolves || 2;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  document.getElementById('settingsForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    await handleSettingsSubmit();
+  });
+
   const resetBtn = document.getElementById('resetSettings');
-  if(resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      if(confirm('設定をリセットしてよろしいですか？')) {
-        localStorage.removeItem('lolWerewolfMembers');
-        localStorage.removeItem('lolWerewolfData');
-        localStorage.removeItem('lolWerewolfMode');
-        localStorage.removeItem('bigTasks');
-        localStorage.removeItem('smallTasks');
-        localStorage.removeItem('bigCount');
-        localStorage.removeItem('smallCount');
-        localStorage.removeItem('villagers');
-        localStorage.removeItem('werewolves');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      if (confirm('設定をリセットしてよろしいですか？')) {
+        await saveMembers([]);
+        await saveSettings({});
         location.reload();
       }
     });
@@ -82,85 +130,73 @@ function generateGmMemberSettings() {
   container.innerHTML = '';
 
   const members = getAllMemberNames();
-  // 10人全員入力済みかどうかチェック（空欄あればエラー表示）
-  if (members.some(name => name.endsWith('：'))) {
+  if (members.length !== 10) {
     container.innerHTML = '<p style="color:red;">まずメンバーを10名すべて入力してください。</p>';
     return;
   }
 
-  // メンバー名の並びをチームごとに分けてソート
-  const teamA = members.filter(name => name.startsWith('Aチーム'));
-  const teamB = members.filter(name => name.startsWith('Bチーム'));
-  const sorted = [...teamA, ...teamB];
-  const saved = JSON.parse(localStorage.getItem('lolWerewolfData') || '{}');
-
-  sorted.forEach(name => {
-    const id = name.replace(/\s/g, '_');
-    const role = saved[name]?.role || '村人';
-    const tasks = (saved[name]?.tasks || []).join('\n');
-    container.innerHTML += `
-      <div>
-        <h4>${name}</h4>
-        <label>役職:
-          <select id="role_${id}">
-            <option value="村人" ${role === '村人' ? 'selected' : ''}>村人</option>
-            <option value="人狼" ${role === '人狼' ? 'selected' : ''}>人狼</option>
-          </select>
-        </label><br>
-        <label>タスク:<br>
-          <textarea id="tasks_${id}" rows="3" cols="40">${tasks}</textarea>
-        </label>
-        <hr>
-      </div>
-    `;
-  });
+  fetchSettings().then(saved => {
+    const sorted = [...members];
+    sorted.forEach(name => {
+      const member = saved.members?.find(m => m.name === name) || {};
+      const role = member.role || '村人';
+      const tasks = (member.tasks || []).join('\n');
+      const id = name.replace(/\s/g, '_');
+      container.innerHTML += `
+        <div>
+          <h4>${name}</h4>
+          <label>役職:
+            <select id="role_${id}">
+              <option value="村人" ${role === '村人' ? 'selected' : ''}>村人</option>
+              <option value="人狼" ${role === '人狼' ? 'selected' : ''}>人狼</option>
+            </select>
+          </label><br>
+          <label>タスク:<br>
+            <textarea id="tasks_${id}" rows="3" cols="40">${tasks}</textarea>
+          </label>
+          <hr>
+        </div>
+      `;
+    });
+  }).catch(console.error);
 }
 
-// 空欄があっても必ず全10人分取得する
 function getAllMemberNames() {
   const names = [];
   for (let i = 1; i <= 5; i++) {
     const a = document.getElementById(`teamA_${i}`).value.trim();
     const b = document.getElementById(`teamB_${i}`).value.trim();
-    // 空欄なら「Aチーム：」だけの文字列になるので後で判定できる
+    if (!a || !b) return [];
     names.push(`Aチーム：${a}`);
     names.push(`Bチーム：${b}`);
   }
   return names;
 }
 
-function handleSettingsSubmit(e) {
-  e.preventDefault();
+async function handleSettingsSubmit() {
   const isGm = isGmMode();
-  const members = getAllMemberNames();
-
-  // メンバー名空欄チェック
-  if (members.some(name => name.endsWith('：'))) {
+  const membersNames = getAllMemberNames();
+  if (membersNames.length !== 10) {
     alert('メンバー名をすべて入力してください。');
     return;
   }
 
   if (isGm) {
-    const data = {};
+    const members = [];
     let valid = true;
-
-    members.forEach(name => {
+    membersNames.forEach(name => {
       const id = name.replace(/\s/g, '_');
       const role = document.getElementById(`role_${id}`)?.value;
-      const tasksRaw = document.getElementById(`tasks_${id}`)?.value;
-      const tasks = tasksRaw ? tasksRaw.split('\n').filter(l => l.trim()) : [];
+      const tasks = document.getElementById(`tasks_${id}`)?.value.split('\n').filter(l => l.trim());
       if (!role || tasks === undefined) valid = false;
-      data[name] = { role, tasks };
+      members.push({ name, role, tasks });
     });
-
     if (!valid) {
       alert('一部役職・タスク未入力です');
       return;
     }
-
-    localStorage.setItem('lolWerewolfMode', 'gm');
-    localStorage.setItem('lolWerewolfData', JSON.stringify(data));
-    localStorage.setItem('lolWerewolfMembers', JSON.stringify(members));
+    await saveMembers(members);
+    await saveSettings({ lolWerewolfMode: 'gm', members });
     alert('設定完了しました。');
     location.href = 'index.html';
     return;
@@ -174,94 +210,63 @@ function handleSettingsSubmit(e) {
   const villagers = +document.getElementById('villagerCount').value;
   const werewolves = +document.getElementById('werewolfCount').value;
 
-  const totalMembers = 10;
-
   if (villagers + werewolves !== 5) {
     alert('各チームの人狼と村人の合計は5にしてください。');
     return;
   }
 
-  if (bigTasks.length < totalMembers * bigCount || smallTasks.length < totalMembers * smallCount) {
-    alert(`大タスクは${totalMembers * bigCount}個、小タスクは${totalMembers * smallCount}個必要です。`);
+  if (bigTasks.length < 10 * bigCount || smallTasks.length < 10 * smallCount) {
+    alert(`大タスクは${10 * bigCount}個、小タスクは${10 * smallCount}個必要です。`);
     return;
   }
 
-  // タスク重複なし（全体で）
+  // 重複チェック
   if ((new Set(bigTasks)).size !== bigTasks.length || (new Set(smallTasks)).size !== smallTasks.length) {
     alert('タスク一覧に重複があります。重複のないタスクを入力してください。');
     return;
   }
 
-  shuffle(bigTasks);
-  shuffle(smallTasks);
-
-  // チームごとに同じ役職数を割り振る
+  // 役割割り当て（例）
   const rolesA = [...Array(villagers).fill('村人'), ...Array(werewolves).fill('人狼')];
   const rolesB = [...Array(villagers).fill('村人'), ...Array(werewolves).fill('人狼')];
-
   shuffle(rolesA);
   shuffle(rolesB);
 
-  const membersA = members.filter(name => name.startsWith('Aチーム'));
-  const membersB = members.filter(name => name.startsWith('Bチーム'));
+  const members = membersNames.map(name => ({ name }));
 
-  const data = {};
-
-  membersA.forEach((name, i) => {
-    const tasks = [
-      ...bigTasks.slice(i * bigCount, (i + 1) * bigCount),
-      ...smallTasks.slice(i * smallCount, (i + 1) * smallCount),
-    ];
-    data[name] = { role: rolesA[i], tasks };
+  // 役割・タスク割当
+  members.forEach((member, i) => {
+    if (member.name.startsWith('Aチーム')) {
+      const idx = i / 2 | 0;
+      member.role = rolesA[idx];
+      member.tasks = [
+        ...bigTasks.slice(idx * bigCount, (idx + 1) * bigCount),
+        ...smallTasks.slice(idx * smallCount, (idx + 1) * smallCount)
+      ];
+    } else {
+      const idx = (i - 1) / 2 | 0;
+      member.role = rolesB[idx];
+      member.tasks = [
+        ...bigTasks.slice((idx + 5) * bigCount, (idx + 6) * bigCount),
+        ...smallTasks.slice((idx + 5) * smallCount, (idx + 6) * smallCount)
+      ];
+    }
   });
 
-  membersB.forEach((name, i) => {
-    const tasks = [
-      ...bigTasks.slice((i + membersA.length) * bigCount, (i + membersA.length + 1) * bigCount),
-      ...smallTasks.slice((i + membersA.length) * smallCount, (i + membersA.length + 1) * smallCount),
-    ];
-    data[name] = { role: rolesB[i], tasks };
+  await saveMembers(members);
+  await saveSettings({
+    lolWerewolfMode: 'nogm',
+    bigTasks,
+    smallTasks,
+    bigCount,
+    smallCount,
+    villagers,
+    werewolves,
+    members,
   });
-
-  localStorage.setItem('lolWerewolfMode', 'nogm');
-  localStorage.setItem('lolWerewolfData', JSON.stringify(data));
-  localStorage.setItem('lolWerewolfMembers', JSON.stringify(members));
-  // タスク・役職数保存
-  localStorage.setItem('bigTasks', bigTasks.join('\n'));
-  localStorage.setItem('smallTasks', smallTasks.join('\n'));
-  localStorage.setItem('bigCount', bigCount);
-  localStorage.setItem('smallCount', smallCount);
-  localStorage.setItem('villagers', villagers);
-  localStorage.setItem('werewolves', werewolves);
 
   alert('設定完了しました。');
   location.href = 'index.html';
-}
-
-function restoreSettings() {
-  const members = JSON.parse(localStorage.getItem('lolWerewolfMembers') || '[]');
-  if (members.length === 10) {
-    for (let i = 0; i < 5; i++) {
-      document.getElementById(`teamA_${i + 1}`).value = members[i * 2].replace('Aチーム：', '');
-      document.getElementById(`teamB_${i + 1}`).value = members[i * 2 + 1].replace('Bチーム：', '');
-    }
-  }
-
-  const mode = localStorage.getItem('lolWerewolfMode');
-  if (mode === 'gm') {
-    document.querySelector('input[value="yes"]').checked = true;
-    handleModeChange({ target: { value: 'yes' } });
-  } else {
-    document.querySelector('input[value="no"]').checked = true;
-    handleModeChange({ target: { value: 'no' } });
-
-    document.getElementById('largeTasks').value = (localStorage.getItem('bigTasks') || '').trim();
-    document.getElementById('smallTasks').value = (localStorage.getItem('smallTasks') || '').trim();
-    document.getElementById('largeTaskCount').value = localStorage.getItem('bigCount') || 1;
-    document.getElementById('smallTaskCount').value = localStorage.getItem('smallCount') || 1;
-    document.getElementById('villagerCount').value = localStorage.getItem('villagers') || 3;
-    document.getElementById('werewolfCount').value = localStorage.getItem('werewolves') || 2;
-  }
 }
 
 function shuffle(arr) {
@@ -271,34 +276,35 @@ function shuffle(arr) {
   }
 }
 
-function loadMembersToDropdown() {
-  const select = document.getElementById('memberSelect');
-  const members = JSON.parse(localStorage.getItem('lolWerewolfMembers') || '[]');
-  select.innerHTML = '';
+async function loadMembersToDropdown() {
+  try {
+    const members = await fetchMembers();
+    const select = document.getElementById('memberSelect');
+    select.innerHTML = '';
 
-  // チーム別にまとめて表示（Aチーム全員、次にBチーム全員）
-  const teamA = members.filter(name => name.startsWith('Aチーム'));
-  const teamB = members.filter(name => name.startsWith('Bチーム'));
+    const teamA = members.filter(m => m.name.startsWith('Aチーム'));
+    const teamB = members.filter(m => m.name.startsWith('Bチーム'));
 
-  teamA.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
-  });
+    teamA.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      select.appendChild(opt);
+    });
+    teamB.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      select.appendChild(opt);
+    });
 
-  teamB.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
-  });
-
-  // 観戦者選択肢
-  const observer = document.createElement('option');
-  observer.value = '観戦者';
-  observer.textContent = '観戦者';
-  select.appendChild(observer);
+    const observer = document.createElement('option');
+    observer.value = '観戦者';
+    observer.textContent = '観戦者';
+    select.appendChild(observer);
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function handleConfirm() {
