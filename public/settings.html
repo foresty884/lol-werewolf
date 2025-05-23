@@ -56,7 +56,35 @@
       </div>
     </form>
   </div>
-
+  <script>
+    document.getElementById('settingsForm').addEventListener('submit', async event => {
+      event.preventDefault();
+  
+      const members = []; // Gather input values for members here
+      try {
+        await fetch('/api/members', { method: 'DELETE' });
+        for (const member of members) {
+          await fetch('/api/members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(member),
+          });
+        }
+        alert('設定が保存されました');
+      } catch (err) {
+        console.error('Failed to save settings', err);
+      }
+    });
+  
+    document.getElementById('resetSettings').addEventListener('click', async () => {
+      try {
+        await fetch('/api/members', { method: 'DELETE' });
+        alert('設定がリセットされました');
+      } catch (err) {
+        console.error('Failed to reset settings', err);
+      }
+    });
+  </script>  
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,18 +1,52 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>LoL人狼割り当てるくん</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOL人狼ツール</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <h1>LoL人狼割り当てるくん</h1>
-    <select id="memberSelect"></select>
-    <button id="confirmBtn">確認</button>
-    <button onclick="location.href='settings.html'">設定</button>
-  </div>
-  <script src="script.js"></script>
+    <header>
+        <h1>LoL人狼割り当てるくん</h1>
+    </header>
+    <main>
+        <div id="main-menu">
+            <button id="settings-button">設定画面</button>
+            <button id="view-button">役割確認</button>
+        </div>
+        <div id="settings-container" class="hidden">
+            <!-- 設定画面の内容はここに描画されます -->
+        </div>
+        <div id="view-container" class="hidden">
+            <!-- 役割確認画面の内容はここに描画されます -->
+        </div>
+    </main>
+    <!-- public/index.html -->
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        const memberSelect = document.getElementById('memberSelect');
+
+        try {
+          const response = await fetch('/api/members');
+          const members = await response.json();
+
+          members.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.name;
+            option.textContent = member.name;
+            memberSelect.appendChild(option);
+          });
+        } catch (err) {
+          console.error('Failed to fetch members', err);
+        }
+
+        document.getElementById('confirmBtn').addEventListener('click', () => {
+          const selectedName = memberSelect.value;
+          window.location.href = `/member.html?name=${encodeURIComponent(selectedName)}`;
+        });
+      });
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>

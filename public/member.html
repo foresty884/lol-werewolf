@@ -33,6 +33,35 @@
   </script>
   <br>
   <button id="backToTopBtn">TOPに戻る</button>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get('name');
+      const memberNameEl = document.getElementById('memberName');
+      const roleEl = document.getElementById('role');
+      const taskListEl = document.getElementById('taskList');
+  
+      try {
+        const response = await fetch('/api/members');
+        const members = await response.json();
+        const member = members.find(m => m.name === name);
+  
+        if (member) {
+          memberNameEl.textContent = member.name;
+          roleEl.textContent = `役職：${member.role}`;
+          member.tasks.forEach(task => {
+            const li = document.createElement('li');
+            li.textContent = task;
+            taskListEl.appendChild(li);
+          });
+        } else {
+          roleEl.textContent = 'このメンバーの情報は見つかりません。';
+        }
+      } catch (err) {
+        console.error('Failed to fetch member data', err);
+      }
+    });
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

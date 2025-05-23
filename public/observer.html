@@ -50,6 +50,34 @@
   </script>
   <br>
   <button id="backToTopBtn">TOPに戻る</button>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const teamAList = document.getElementById('teamA-list');
+      const teamBList = document.getElementById('teamB-list');
+  
+      try {
+        const response = await fetch('/api/members');
+        const members = await response.json();
+  
+        members.forEach(member => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${member.name}</td>
+            <td>${member.role}</td>
+            <td>${member.tasks.join('<br>')}</td>
+          `;
+  
+          if (member.team === 'A') {
+            teamAList.appendChild(tr);
+          } else if (member.team === 'B') {
+            teamBList.appendChild(tr);
+          }
+        });
+      } catch (err) {
+        console.error('Failed to fetch members', err);
+      }
+    });
+  </script>  
   <script src="script.js"></script>
 </body>
 </html>
