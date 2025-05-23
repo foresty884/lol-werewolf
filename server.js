@@ -1,67 +1,64 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const path = require('path');
-const dotenv = require('dotenv');
-
-dotenv.config();
-
+const { MongoClient } = require('mongodb');
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = 10000;
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+// 環境変数からMongoDBの接続URLを取得（存在しない場合はデフォルト値を使用）
+const mongoUrl = process.env.MONGO_URI || 'mongodb+srv://<username>:<password>@cluster0.mongodb.net/lol-werewolf?retryWrites=true&w=majority';
+
+// MongoDBへの接続関数
+async function connectToMongoDB() {
+    try {
+        const client = await MongoClient.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+        console.log("Connected to MongoDB");
+        return client.db('lol-werewolf');
+    } catch (error) {
+        console.error("Failed to connect to MongoDB:", error);
+        process.exit(1); // エラー時にアプリケーションを停止
+    }
+}
 
 // MongoDB接続
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+let db;
+let membersCollection;
+(async () => {
+    db = await connectToMongoDB();
+    membersCollection = db.collection('members');
+})();
 
-// スキーマとモデル定義
-const memberSchema = new mongoose.Schema({
-  name: String,
-  role: String,
-  tasks: [String],
-  team: String,
-});
-const Member = mongoose.model('Member', memberSchema);
+// JSONパーサーを設定
+app.use(express.json());
 
-// APIエンドポイント
-app.get('/api/members', async (req, res) => {
-  try {
-    const members = await Member.find();
-    res.json(members);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch members' });
-  }
+// ルートエンドポイント
+app.get('/', (req, res) => {
+    res.send('LOL Werewolf Server is running!');
 });
 
-app.post('/api/members', async (req, res) => {
-  try {
-    const newMember = new Member(req.body);
-    await newMember.save();
-    res.status(201).json(newMember);
-  } catch (err) {
-    res.status(400).json({ error: 'Failed to create member' });
-  }
+// 設定画面のデータ取得エンドポイント
+app.get('/members', async (req, res) => {
+    try {
+        const members = await membersCollection.find().toArray();
+        res.json(members);
+    } catch (error) {
+        console.error("Error fetching members:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
-app.delete('/api/members', async (req, res) => {
-  try {
-    await Member.deleteMany();
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to reset members' });
-  }
+// 設定データの保存エンドポイント
+app.post('/members', async (req, res) => {
+    try {
+        const newMembers = req.body;
+        await membersCollection.deleteMany({});
+        await membersCollection.insertMany(newMembers);
+        res.status(201).send("Members updated successfully");
+    } catch (error) {
+        console.error("Error updating members:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
-app.get('/member/:id', (req, res) => res.sendFile(path.join(__dirname, 'public', 'member.html')));
-app.get('/observer', (req, res) => res.sendFile(path.join(__dirname, 'public', 'observer.html')));
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+// サーバー起動
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
