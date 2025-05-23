@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const bodyParser = require('body-parser');
 const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
@@ -74,7 +75,16 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+// 静的ファイルの配信
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ルートのリダイレクト（デフォルトで index.html を返す）
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// サーバー起動
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
