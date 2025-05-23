@@ -17,8 +17,12 @@ async function fetchFromServer(endpoint, options = {}) {
     ...options,
   });
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Unknown server error');
+    try {
+      const error = await response.json();
+      throw new Error(error.message || 'Unknown server error');
+    } catch {
+      throw new Error('Invalid server response format');
+    }
   }
   return response.json();
 }

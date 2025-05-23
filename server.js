@@ -38,6 +38,25 @@ app.post("/api/members", async (req, res) => {
   res.json(result.ops[0]);
 });
 
+app.post("/api/save-settings", (req, res) => {
+  const settingsData = req.body;
+
+  // データ検証
+  if (!settingsData) {
+    return res.status(400).json({ error: "Invalid settings data" });
+  }
+
+  // MongoDBに保存
+  SettingsModel.create(settingsData)
+    .then((result) => {
+      res.status(200).json({ message: "Settings saved successfully", data: result });
+    })
+    .catch((err) => {
+      console.error("Error saving settings:", err);
+      res.status(500).json({ error: "Failed to save settings" });
+    });
+});
+
 app.delete("/api/members/:index", async (req, res) => {
   const index = parseInt(req.params.index, 10);
   const members = await membersCollection.find().toArray();
