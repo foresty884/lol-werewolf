@@ -40,7 +40,7 @@ app.post("/api/save-settings", async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Settings saved successfully",
-      data: result.ops[0],
+      data: { id: result.insertedId }, 
     });
   } catch (error) {
     console.error("Error saving settings:", error);
