@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// サーバーとの通信
 async function fetchFromServer(endpoint, options = {}) {
   const response = await fetch(`/api/${endpoint}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -27,11 +28,10 @@ async function fetchFromServer(endpoint, options = {}) {
   return response.json();
 }
 
+// 設定ページのセットアップ
 async function setupSettingsPage() {
   const teamAInputs = document.getElementById('teamAInputs');
   const teamBInputs = document.getElementById('teamBInputs');
-  const gmArea = document.getElementById('gmSettings');
-  const nonGmArea = document.getElementById('nogmSettings');
 
   teamAInputs.innerHTML = '';
   teamBInputs.innerHTML = '';
@@ -44,15 +44,6 @@ async function setupSettingsPage() {
   document.querySelectorAll('input[name="gmMode"]').forEach(radio => {
     radio.addEventListener('change', handleModeChange);
   });
-
-  for (let i = 1; i <= 5; i++) {
-    document.getElementById(`teamA_${i}`).addEventListener('input', () => {
-      if (isGmMode()) generateGmMemberSettings();
-    });
-    document.getElementById(`teamB_${i}`).addEventListener('input', () => {
-      if (isGmMode()) generateGmMemberSettings();
-    });
-  }
 
   document.getElementById('settingsForm').addEventListener('submit', handleSettingsSubmit);
 
@@ -73,6 +64,7 @@ async function setupSettingsPage() {
   await restoreSettings();
 }
 
+// モード切替
 function handleModeChange(e) {
   const isGm = e.target.value === 'yes';
   document.getElementById('gmSettings').style.display = isGm ? 'block' : 'none';
@@ -84,6 +76,7 @@ function isGmMode() {
   return document.querySelector('input[name="gmMode"]:checked').value === 'yes';
 }
 
+// GMモードのメンバー設定生成
 async function generateGmMemberSettings() {
   const container = document.getElementById('gmMemberSettings');
   container.innerHTML = '';
@@ -118,6 +111,7 @@ async function generateGmMemberSettings() {
   });
 }
 
+// メンバー名の取得
 async function getAllMemberNames() {
   const names = [];
   for (let i = 1; i <= 5; i++) {
@@ -129,6 +123,7 @@ async function getAllMemberNames() {
   return names;
 }
 
+// 設定保存
 async function handleSettingsSubmit(e) {
   e.preventDefault();
   const isGm = isGmMode();
@@ -160,6 +155,7 @@ async function handleSettingsSubmit(e) {
   }
 }
 
+// 初期設定の復元
 async function restoreSettings() {
   const settings = await fetchFromServer('settings');
 
@@ -177,15 +173,14 @@ async function restoreSettings() {
   });
 }
 
+// メンバー一覧をドロップダウンにロード
 async function loadMembersToDropdown() {
   const select = document.getElementById('memberSelect');
   const members = await fetchFromServer('members');
   select.innerHTML = '';
 
-  const teamA = members.filter(name => name.startsWith('Aチーム'));
-  const teamB = members.filter(name => name.startsWith('Bチーム'));
-
-  [...teamA, ...teamB].forEach(name => {
+  [...members.filter(name => name.startsWith('Aチーム')), 
+   ...members.filter(name => name.startsWith('Bチーム'))].forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
     opt.textContent = name;
@@ -198,6 +193,7 @@ async function loadMembersToDropdown() {
   select.appendChild(observer);
 }
 
+// メンバー選択確認
 function handleConfirm() {
   const member = document.getElementById('memberSelect').value;
   if (member === '観戦者') {
@@ -211,6 +207,7 @@ function handleConfirm() {
   }
 }
 
+// トップに戻るボタンの設定
 function setupBackToTopButton() {
   const backBtn = document.getElementById('backToTopBtn');
   if (backBtn) {
