@@ -35,32 +35,49 @@ async function setupSettingsPage() {
   try {
     const teamAInputs = document.getElementById('teamAInputs');
     const teamBInputs = document.getElementById('teamBInputs');
-    const memberListContainer = document.querySelector('#memberList');
-    const resetBtn = document.getElementById('resetSettings');
 
+    // teamAInputsとteamBInputsの存在確認
+    if (!teamAInputs || !teamBInputs) {
+      console.error('teamAInputs または teamBInputs が見つかりません');
+      return;
+    }
+
+    // 初期化
     teamAInputs.innerHTML = '';
     teamBInputs.innerHTML = '';
-    memberListContainer.innerHTML = '';
 
+    // メンバー一覧取得
     const membersData = await fetchFromServer('members');
+    const listContainer = document.querySelector("#memberList");
+    if (listContainer) {
+      listContainer.innerHTML = '';
+      membersData.members.forEach(member => {
+        const listItem = document.createElement("li");
+        listItem.textContent = member.name;
+        listContainer.appendChild(listItem);
+      });
+    }
 
-    membersData.members.forEach(member => {
-      const listItem = document.createElement('li');
-      listItem.textContent = member.name;
-      memberListContainer.appendChild(listItem);
-    });
-
+    // 入力欄生成
     for (let i = 1; i <= 5; i++) {
       teamAInputs.innerHTML += `<input type="text" id="teamA_${i}" placeholder="Aチーム ${i}人目"><br>`;
       teamBInputs.innerHTML += `<input type="text" id="teamB_${i}" placeholder="Bチーム ${i}人目"><br>`;
     }
 
-    document.querySelectorAll('input[name="gmMode"]').forEach(radio => {
+    // GMモード切替イベント設定
+    const gmModeRadios = document.querySelectorAll('input[name="gmMode"]');
+    gmModeRadios.forEach(radio => {
       radio.addEventListener('change', handleModeChange);
     });
 
-    document.getElementById('settingsForm').addEventListener('submit', handleSettingsSubmit);
+    // 設定フォーム送信イベント設定
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+      settingsForm.addEventListener('submit', handleSettingsSubmit);
+    }
 
+    // リセットボタン設定
+    const resetBtn = document.getElementById('resetSettings');
     if (resetBtn) {
       resetBtn.addEventListener('click', async () => {
         if (confirm('設定をリセットしてよろしいですか？')) {
@@ -74,9 +91,10 @@ async function setupSettingsPage() {
       });
     }
 
+    // 設定の復元
     await restoreSettings();
   } catch (error) {
-    console.error('Failed to set up settings page:', error.message);
+    console.error('設定ページのセットアップに失敗しました:', error.message);
   }
 }
 
