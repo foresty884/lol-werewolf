@@ -25,6 +25,7 @@ MongoClient.connect(uri, { useUnifiedTopology: true })
 app.use(bodyParser.json());
 app.use(express.static("public"));
 
+app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
 // メンバー操作
 app.get("/api/members", async (req, res) => {
   const members = await membersCollection.find().toArray();
@@ -75,7 +76,15 @@ app.post("/api/assign-tasks", async (req, res) => {
   res.json(assignments);
 });
 
-app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
+app.get("/tasks", async (req, res) => {
+  try {
+    const tasks = await Task.find();
+    res.json(tasks);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch tasks" });
+  }
+});
 
 
 // サーバー起動
