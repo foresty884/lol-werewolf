@@ -54,17 +54,26 @@ app.post('/api/members', async (req, res) => {
   }
 });
 
-app.get('/api/get-settings', (req, res) => {
-  // 設定情報を返す処理
-  res.json({
-    teamA: ['Alice', 'Bob', 'Charlie'],
-    teamB: ['Dave', 'Eve', 'Frank'],
-    gmMode: true,
-    tasks: {
-      largeTasks: ['Task1', 'Task2'],
-      smallTasks: ['Task3', 'Task4']
+app.get('/api/get-settings', async (req, res) => {
+  try {
+    const settings = await db.collection('settings').findOne({});
+    if (settings) {
+      res.json(settings); // 保存されている値を返す
+    } else {
+      res.json({
+        teamA: [],
+        teamB: [],
+        gmMode: false,
+        tasks: {
+          largeTasks: [],
+          smallTasks: []
+        }
+      }); // 空のデータを返す
     }
-  });
+  } catch (err) {
+    console.error('設定情報の取得に失敗:', err);
+    res.status(500).json({ error: '設定情報の取得に失敗しました' });
+  }
 });
 
 app.delete('/api/members', async (req, res) => {
@@ -119,6 +128,33 @@ app.post('/save-settings', async (req, res) => {
     res.send({ success: true });
   } catch (error) {
     res.status(500).send({ error: '設定の保存に失敗しました' });
+  }
+});
+
+app.post('/api/save-settings', async (req, res) => {
+  try {
+    const { teamA, teamB, gmMode, tasks } = req.body;
+
+    await db.collection('settings').updateOne(
+      {},
+      { $set: { teamA, teamB, gmMode, tasks } },
+      { upsert: true } // データが存在しない場合は挿入
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('設定情報の保存に失敗:', err);
+    res.status(500).json({ error: '設定情報の保存に失敗しました' });
+  }
+});
+
+app.post('/api/reset-settings', async (req, res) => {
+  try {
+    await db.collection('settings').deleteOne({});
+    res.json({ success: true });
+  } catch (err) {
+    console.error('設定情報のリセットに失敗:', err);
+    res.status(500).json({ error: '設定情報のリセットに失敗しました' });
   }
 });
 
