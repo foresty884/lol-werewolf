@@ -26,21 +26,32 @@ app.use(bodyParser.json());
 app.use(express.static("public"));
 
 app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
+app.get("/api/check-db", async (req, res) => {
+  try {
+    const collections = await db.listCollections().toArray();
+    res.status(200).json({ success: true, collections });
+  } catch (error) {
+    console.error("Error checking DB:", error);
+    res.status(500).json({ success: false, error: "Failed to check DB" });
+  }
+});
 
 // 設定保存
 app.post("/api/save-settings", async (req, res) => {
   const settingsData = req.body;
 
   if (!settingsData) {
+    console.log("Invalid settings data received:", settingsData);
     return res.status(400).json({ success: false, error: "Invalid settings data" });
   }
 
   try {
     const result = await settingsCollection.insertOne(settingsData);
+    console.log("Inserted data:", result);
     res.status(200).json({
       success: true,
       message: "Settings saved successfully",
-      data: { id: result.insertedId }, 
+      data: { id: result.insertedId },
     });
   } catch (error) {
     console.error("Error saving settings:", error);
@@ -48,10 +59,21 @@ app.post("/api/save-settings", async (req, res) => {
   }
 });
 
+app.get("/api/settings", async (req, res) => {
+  try {
+    const settings = await settingsCollection.findOne({});
+    res.status(200).json({ success: true, settings });
+  } catch (error) {
+    console.error("Error fetching settings:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch settings" });
+  }
+});
+
 // 設定リセット
 app.delete("/api/reset-settings", async (req, res) => {
   try {
     const result = await settingsCollection.deleteMany({});
+    console.log("Reset operation result:", result);
     res.status(200).json({
       success: true,
       message: "All settings have been reset.",

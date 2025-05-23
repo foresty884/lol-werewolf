@@ -38,6 +38,16 @@ async function setupSettingsPage() {
   teamAInputs.innerHTML = '';
   teamBInputs.innerHTML = '';
 
+  fetch("/api/settings")
+  .then(response => response.json())
+  .then(data => {
+    if (data.success && data.settings) {
+      document.querySelector("#yourInputElement").value = data.settings.yourField;
+      // 他のフィールドも同様に設定
+    }
+  })
+  .catch(error => console.error("Error fetching settings:", error));
+
   for (let i = 1; i <= 5; i++) {
     teamAInputs.innerHTML += `<input type="text" id="teamA_${i}" placeholder="Aチーム ${i}人目"><br>`;
     teamBInputs.innerHTML += `<input type="text" id="teamB_${i}" placeholder="Bチーム ${i}人目"><br>`;
