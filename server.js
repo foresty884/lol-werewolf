@@ -1,76 +1,81 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const path = require('path');
+// server.js
+
+const express = require("express");
+const bodyParser = require("body-parser");
+const { MongoClient } = require("mongodb");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// MongoDB Atlasの接続URIを環境変数から取得
-const uri = process.env.MONGODB_URI;
-if (!uri) {
-  console.error('MONGODB_URI is not defined!');
-  process.exit(1);
-}
+// MongoDB 設定
+const uri = "mongodb://localhost:27017";
+const dbName = "lolTaskAssigner";
 
-// MongoDBに接続
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+let db, membersCollection, tasksCollection;
+
+MongoClient.connect(uri, { useUnifiedTopology: true })
+  .then(client => {
+    db = client.db(dbName);
+    membersCollection = db.collection("members");
+    tasksCollection = db.collection("tasks");
+    console.log("Connected to database");
+  })
+  .catch(console.error);
+
+app.use(bodyParser.json());
+app.use(express.static("public"));
+
+// メンバー操作
+app.get("/api/members", async (req, res) => {
+  const members = await membersCollection.find().toArray();
+  res.json(members);
+});
+
+app.post("/api/members", async (req, res) => {
+  const newMember = req.body;
+  const result = await membersCollection.insertOne(newMember);
+  res.json(result.ops[0]);
+});
+
+app.delete("/api/members/:index", async (req, res) => {
+  const index = parseInt(req.params.index, 10);
+  const members = await membersCollection.find().toArray();
+  const memberToRemove = members[index];
+
+  if (memberToRemove) {
+    await membersCollection.deleteOne({ _id: memberToRemove._id });
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+// タスク割り当て
+app.post("/api/assign-tasks", async (req, res) => {
+  const { majorCount, minorCount } = req.body;
+  const members = await membersCollection.find().toArray();
+  const tasks = await tasksCollection.find().toArray();
+
+  const majorTasks = tasks.filter(task => task.type === "major").map(t => t.name);
+  const minorTasks = tasks.filter(task => task.type === "minor").map(t => t.name);
+
+  if (majorTasks.length < majorCount * members.length || minorTasks.length < minorCount * members.length) {
+    return res.status(400).send("Not enough tasks to assign.");
+  }
+
+  const shuffledMajor = majorTasks.sort(() => Math.random() - 0.5);
+  const shuffledMinor = minorTasks.sort(() => Math.random() - 0.5);
+
+  const assignments = members.map(member => {
+    const assignedMajor = shuffledMajor.splice(0, majorCount);
+    const assignedMinor = shuffledMinor.splice(0, minorCount);
+    return { name: member.name, tasks: { major: assignedMajor, minor: assignedMinor } };
   });
 
-// ミドルウェア設定
-app.use(cors());
-app.use(bodyParser.json());
-
-// 静的ファイルを配信するための設定
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ルートアクセス時に index.html を返す
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.json(assignments);
 });
 
-// データモデルの定義
-const taskSchema = new mongoose.Schema({
-  name: String,
-  role: String,
-  tasks: [String]
-});
-const Task = mongoose.model('Task', taskSchema);
-
-// APIエンドポイントの定義
-
-// メンバー情報の取得
-app.get('/api/member/:name', async (req, res) => {
-  try {
-    const member = await Task.findOne({ name: req.params.name });
-    if (member) {
-      res.json(member);
-    } else {
-      res.status(404).json({ message: 'Member not found' });
-    }
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-// メンバー情報の保存
-app.post('/api/member', async (req, res) => {
-  const { name, role, tasks } = req.body;
-  const newMember = new Task({ name, role, tasks });
-  try {
-    await newMember.save();
-    res.status(201).json(newMember);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// サーバーの起動
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+// サーバー起動
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
