@@ -38,6 +38,21 @@ async function setupSettingsPage() {
   teamAInputs.innerHTML = '';
   teamBInputs.innerHTML = '';
 
+  fetch("/api/members")
+  .then(response => response.json())
+  .then(data => {
+    if (data.success && data.members) {
+      const listContainer = document.querySelector("#memberList");
+      listContainer.innerHTML = ""; // リストをクリア
+      data.members.forEach(member => {
+        const listItem = document.createElement("li");
+        listItem.textContent = member.name;
+        listContainer.appendChild(listItem);
+      });
+    }
+  })
+  .catch(error => console.error("Error fetching members:", error));
+
   fetch("/api/settings")
   .then(response => response.json())
   .then(data => {
@@ -238,4 +253,15 @@ function setupBackToTopButton() {
       location.href = 'index.html';
     });
   }
+}
+
+function updateSettings() {
+  fetch("/api/save-settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ memberName: "新しい設定データ" }),
+  })
+    .then(response => response.json())
+    .then(() => fetchDataAndUpdateUI()) // UI更新
+    .catch(error => console.error("Error updating settings:", error));
 }

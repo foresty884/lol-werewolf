@@ -35,6 +35,15 @@ app.get("/api/check-db", async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to check DB" });
   }
 });
+app.get("/api/members", async (req, res) => {
+  try {
+    const members = await membersCollection.find().toArray();
+    res.status(200).json({ success: true, members });
+  } catch (error) {
+    console.error("Error fetching members:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch members" });
+  }
+});
 
 // 設定保存
 app.post("/api/save-settings", async (req, res) => {
