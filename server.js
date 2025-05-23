@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 // MongoDB 設定
 const uri = process.env.MONGO_URI;
-const dbName = "lolTaskAssigner";
+const dbName = "test";
 
 let db, settingsCollection, membersCollection, tasksCollection;
 
