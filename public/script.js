@@ -17,14 +17,16 @@ async function fetchFromServer(endpoint, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
+
   if (!response.ok) {
     try {
       const error = await response.json();
-      throw new Error(error.message || 'Unknown server error');
+      throw new Error(error.error || 'Unknown server error');
     } catch {
       throw new Error('Invalid server response format');
     }
   }
+
   return response.json();
 }
 
@@ -52,7 +54,7 @@ async function setupSettingsPage() {
     resetBtn.addEventListener('click', async () => {
       if (confirm('設定をリセットしてよろしいですか？')) {
         try {
-          await fetchFromServer('reset', { method: 'POST' });
+          await fetchFromServer('reset-settings', { method: 'DELETE' }); // DELETE メソッドを使用
           location.reload();
         } catch (error) {
           alert('リセットに失敗しました: ' + error.message);
@@ -61,7 +63,11 @@ async function setupSettingsPage() {
     });
   }
 
-  await restoreSettings();
+  try {
+    await restoreSettings(); // 初期設定を復元
+  } catch (error) {
+    console.error('Failed to restore settings:', error.message);
+  }
 }
 
 // モード切替
@@ -144,7 +150,7 @@ async function handleSettingsSubmit(e) {
   });
 
   try {
-    await fetchFromServer('settings', {
+    await fetchFromServer('save-settings', { // エンドポイントを一致させる
       method: 'POST',
       body: JSON.stringify({ mode: isGm ? 'gm' : 'nogm', members: data }),
     });
@@ -157,20 +163,27 @@ async function handleSettingsSubmit(e) {
 
 // 初期設定の復元
 async function restoreSettings() {
-  const settings = await fetchFromServer('settings');
+  try {
+    const settings = await fetchFromServer('settings');
 
-  if (settings.mode === 'gm') {
-    document.querySelector('input[value="yes"]').checked = true;
-    handleModeChange({ target: { value: 'yes' } });
-  } else {
-    document.querySelector('input[value="no"]').checked = true;
-    handleModeChange({ target: { value: 'no' } });
+    if (settings.mode === 'gm') {
+      document.querySelector('input[value="yes"]').checked = true;
+      handleModeChange({ target: { value: 'yes' } });
+    } else {
+      document.querySelector('input[value="no"]').checked = true;
+      handleModeChange({ target: { value: 'no' } });
+    }
+
+    settings.members.forEach((name, i) => {
+      const inputId = name.startsWith('Aチーム') ? `teamA_${i + 1}` : `teamB_${i + 1}`;
+      const inputElement = document.getElementById(inputId);
+      if (inputElement) {
+        inputElement.value = name.split('：')[1];
+      }
+    });
+  } catch (error) {
+    console.error('Error restoring settings:', error.message);
   }
-
-  settings.members.forEach((name, i) => {
-    const inputId = name.startsWith('Aチーム') ? `teamA_${i + 1}` : `teamB_${i + 1}`;
-    document.getElementById(inputId).value = name.split('：')[1];
-  });
 }
 
 // メンバー一覧をドロップダウンにロード
@@ -214,53 +227,5 @@ function setupBackToTopButton() {
     backBtn.addEventListener('click', () => {
       location.href = 'index.html';
     });
-  }
-}
-
-async function saveSettings(settings) {
-  try {
-    const response = await fetch("/api/save-settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(settings),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error || "Unknown error");
-    }
-
-    console.log("Settings saved successfully:", data);
-    return data;
-  } catch (error) {
-    console.error("Failed to save settings:", error.message);
-    throw error;
-  }
-}
-
-async function resetSettings() {
-  try {
-    const response = await fetch("/api/reset-settings", { method: "DELETE" });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error || "Unknown error");
-    }
-
-    console.log("Settings reset successfully:", data);
-    return data;
-  } catch (error) {
-    console.error("Failed to reset settings:", error.message);
-    throw error;
   }
 }
