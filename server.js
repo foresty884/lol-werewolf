@@ -89,10 +89,17 @@ app.post("/api/save-settings", async (req, res) => {
 
   try {
     const result = await settingsCollection.insertOne(settingsData);
-    res.status(200).json({ message: "Settings saved successfully", data: result.ops[0] });
+    res.status(200).json({
+      success: true,
+      message: "Settings saved successfully",
+      data: result.ops[0], // 保存されたデータ
+    });
   } catch (error) {
     console.error("Error saving settings:", error);
-    res.status(500).json({ error: "Failed to save settings" });
+    res.status(500).json({
+      success: false,
+      error: "Failed to save settings",
+    });
   }
 });
 
@@ -100,10 +107,17 @@ app.post("/api/save-settings", async (req, res) => {
 app.delete("/api/reset-settings", async (req, res) => {
   try {
     const result = await settingsCollection.deleteMany({});
-    res.status(200).json({ message: "All settings have been reset.", deletedCount: result.deletedCount });
+    res.status(200).json({
+      success: true,
+      message: "All settings have been reset.",
+      deletedCount: result.deletedCount, // 削除されたドキュメント数
+    });
   } catch (error) {
     console.error("Error resetting settings:", error);
-    res.status(500).json({ error: "Failed to reset settings." });
+    res.status(500).json({
+      success: false,
+      error: "Failed to reset settings.",
+    });
   }
 });
 
