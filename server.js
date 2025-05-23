@@ -47,21 +47,21 @@ app.get("/api/members", async (req, res) => {
 
 // 設定保存
 app.post("/api/save-settings", async (req, res) => {
-  const settingsData = req.body;
-
-  if (!settingsData) {
-    console.log("Invalid settings data received:", settingsData);
-    return res.status(400).json({ success: false, error: "Invalid settings data" });
-  }
+  const { settings, members, tasks } = req.body;
 
   try {
-    const result = await settingsCollection.insertOne(settingsData);
-    console.log("Inserted data:", result);
-    res.status(200).json({
-      success: true,
-      message: "Settings saved successfully",
-      data: { id: result.insertedId },
-    });
+    // 設定の保存
+    await settingsCollection.replaceOne({}, settings, { upsert: true });
+
+    // メンバーの保存
+    await membersCollection.deleteMany({});
+    await membersCollection.insertMany(members);
+
+    // タスクの保存
+    await tasksCollection.deleteMany({});
+    await tasksCollection.insertMany(tasks);
+
+    res.status(200).json({ success: true, message: "Settings saved successfully" });
   } catch (error) {
     console.error("Error saving settings:", error);
     res.status(500).json({ success: false, error: "Failed to save settings" });
