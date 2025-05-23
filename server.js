@@ -1,100 +1,80 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const { MongoClient } = require("mongodb");
-const path = require("path");
-
+const express = require('express');
+const bodyParser = require('body-parser');
+const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = 3000;
 
-// MongoDB 設定
-const uri = process.env.MONGO_URI;
-const dbName = "test";
-
-let db, settingsCollection, membersCollection, tasksCollection;
-
-MongoClient.connect(uri, { useUnifiedTopology: true })
-  .then(client => {
-    db = client.db(dbName);
-    settingsCollection = db.collection("settings");
-    membersCollection = db.collection("members");
-    tasksCollection = db.collection("tasks");
-    console.log("Connected to database");
-  })
-  .catch(console.error);
+// MongoDB Setup
+const uri = 'mongodb://localhost:27017';
+const client = new MongoClient(uri);
+const dbName = 'lol_werewolf';
+let db;
 
 app.use(bodyParser.json());
-app.use(express.static("public"));
 
-app.get('/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings.html')));
-app.get("/api/check-db", async (req, res) => {
-  try {
-    const collections = await db.listCollections().toArray();
-    res.status(200).json({ success: true, collections });
-  } catch (error) {
-    console.error("Error checking DB:", error);
-    res.status(500).json({ success: false, error: "Failed to check DB" });
-  }
+client.connect().then(() => {
+  db = client.db(dbName);
+  console.log(`Connected to database: ${dbName}`);
+}).catch(err => {
+  console.error('Database connection failed:', err);
 });
-app.get("/api/members", async (req, res) => {
+
+// Routes
+// Get all members
+app.get('/api/members', async (req, res) => {
   try {
-    const members = await membersCollection.find().toArray();
-    res.status(200).json({ success: true, members });
-  } catch (error) {
-    console.error("Error fetching members:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch members" });
+    const members = await db.collection('members').find().toArray();
+    res.json({ success: true, members });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 設定保存
-app.post("/api/save-settings", async (req, res) => {
-  const { settings, members, tasks } = req.body;
-
+// Save members
+app.post('/api/members', async (req, res) => {
   try {
-    // 設定の保存
-    await settingsCollection.replaceOne({}, settings, { upsert: true });
-
-    // メンバーの保存
-    await membersCollection.deleteMany({});
-    await membersCollection.insertMany(members);
-
-    // タスクの保存
-    await tasksCollection.deleteMany({});
-    await tasksCollection.insertMany(tasks);
-
-    res.status(200).json({ success: true, message: "Settings saved successfully" });
-  } catch (error) {
-    console.error("Error saving settings:", error);
-    res.status(500).json({ success: false, error: "Failed to save settings" });
+    const { members } = req.body;
+    await db.collection('members').deleteMany({});
+    await db.collection('members').insertMany(members);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get("/api/settings", async (req, res) => {
+// Get settings
+app.get('/api/settings', async (req, res) => {
   try {
-    const settings = await settingsCollection.findOne({});
-    res.status(200).json({ success: true, settings });
-  } catch (error) {
-    console.error("Error fetching settings:", error);
-    res.status(500).json({ success: false, error: "Failed to fetch settings" });
+    const settings = await db.collection('settings').findOne();
+    res.json({ success: true, settings });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 設定リセット
-app.delete("/api/reset-settings", async (req, res) => {
+// Save settings
+app.post('/api/settings', async (req, res) => {
   try {
-    const result = await settingsCollection.deleteMany({});
-    console.log("Reset operation result:", result);
-    res.status(200).json({
-      success: true,
-      message: "All settings have been reset.",
-      deletedCount: result.deletedCount,
-    });
-  } catch (error) {
-    console.error("Error resetting settings:", error);
-    res.status(500).json({ success: false, error: "Failed to reset settings" });
+    const settings = req.body;
+    await db.collection('settings').deleteMany({});
+    await db.collection('settings').insertOne(settings);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// サーバー起動
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Get tasks
+app.get('/api/tasks', async (req, res) => {
+  try {
+    const tasks = await db.collection('tasks').find().toArray();
+    res.json({ success: true, tasks });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
