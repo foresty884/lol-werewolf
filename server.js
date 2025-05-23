@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // MongoDB 設定
-const uri = "mongodb://localhost:27017";
+const uri = process.env.MONGO_URI;
 const dbName = "lolTaskAssigner";
 
 let db, membersCollection, tasksCollection;
