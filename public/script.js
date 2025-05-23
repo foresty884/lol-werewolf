@@ -2,14 +2,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const path = location.pathname;
 
   if (path.endsWith('settings.html')) {
-    setupSettingsPage();
+    restoreSettings(); // 設定画面の初期化
+
+    // フォーム送信時の動作をカスタマイズ
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+      settingsForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // デフォルトのフォーム送信を防ぐ
+        await saveSettings(); // 設定を保存
+      });
+    }
+
+    // GMモードの切り替えを監視
+    const gmModeRadios = document.querySelectorAll('input[name="gmMode"]');
+    if (gmModeRadios) {
+      gmModeRadios.forEach(radio => {
+        radio.addEventListener('change', handleModeChange);
+      });
+    }
+
+    // 設定リセットボタンの動作
+    const resetButton = document.getElementById('resetSettings');
+    if (resetButton) {
+      resetButton.addEventListener('click', resetSettings);
+    }
   } else if (path.endsWith('index.html') || path === '/' || path === '/index') {
     loadMembersToDropdown();
-    document.getElementById('confirmBtn').addEventListener('click', handleConfirm);
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', handleConfirm);
+    }
   } else if (path.endsWith('member.html') || path.endsWith('observer.html')) {
     setupBackToTopButton();
   }
 });
+
 
 async function fetchFromServer(endpoint, options = {}) {
   try {
@@ -195,27 +222,67 @@ async function handleSettingsSubmit(e) {
 
 async function restoreSettings() {
   try {
-    const settings = await fetchFromServer('settings');
+    const settings = await fetchFromServer('get-settings');
 
-    if (settings.settings.mode === 'gm') {
-      document.querySelector('input[value="yes"]').checked = true;
-      handleModeChange({ target: { value: 'yes' } });
-    } else {
-      document.querySelector('input[value="no"]').checked = true;
-      handleModeChange({ target: { value: 'no' } });
-    }
+    // チームメンバーを復元
+    const teamAInputs = document.getElementById('teamAInputs');
+    const teamBInputs = document.getElementById('teamBInputs');
+    teamAInputs.innerHTML = '';
+    teamBInputs.innerHTML = '';
 
-    Object.entries(settings.settings.members).forEach(([name, value], index) => {
-      const inputId = name.startsWith('Aチーム') ? `teamA_${index + 1}` : `teamB_${index + 1}`;
-      const inputElement = document.getElementById(inputId);
-      if (inputElement) {
-        inputElement.value = name.split('：')[1];
-      }
+    (settings.teamA || []).forEach((member, index) => {
+      teamAInputs.innerHTML += `<input type="text" id="teamA_${index + 1}" value="${member}" placeholder="Aチーム ${index + 1}人目"><br>`;
     });
+    (settings.teamB || []).forEach((member, index) => {
+      teamBInputs.innerHTML += `<input type="text" id="teamB_${index + 1}" value="${member}" placeholder="Bチーム ${index + 1}人目"><br>`;
+    });
+
+    // GMモード設定を復元
+    const gmMode = settings.gmMode || 'no';
+    document.querySelector(`input[name="gmMode"][value="${gmMode}"]`).checked = true;
+    handleModeChange();
+
+    if (gmMode === 'no') {
+      // GM無しモードの設定を復元
+      document.getElementById('largeTasks').value = (settings.largeTasks || []).join('\n');
+      document.getElementById('smallTasks').value = (settings.smallTasks || []).join('\n');
+      document.getElementById('largeTaskCount').value = settings.largeTaskCount || 0;
+      document.getElementById('smallTaskCount').value = settings.smallTaskCount || 0;
+    }
   } catch (error) {
-    console.error('Error restoring settings:', error.message);
+    console.error('設定の復元に失敗しました:', error.message);
   }
 }
+
+
+function assignTasks(members, largeTasks, smallTasks, largeTaskCount, smallTaskCount) {
+  const tasks = {};
+
+  // メンバーをチームごとに分ける
+  const teamA = members.filter((_, index) => index % 2 === 0); // 偶数インデックス
+  const teamB = members.filter((_, index) => index % 2 === 1); // 奇数インデックス
+
+  // 各チームにタスクを割り振る
+  [teamA, teamB].forEach(team => {
+    team.forEach(member => {
+      const assignedTasks = [];
+      for (let i = 0; i < largeTaskCount; i++) {
+        if (largeTasks.length > 0) {
+          assignedTasks.push(largeTasks.pop());
+        }
+      }
+      for (let i = 0; i < smallTaskCount; i++) {
+        if (smallTasks.length > 0) {
+          assignedTasks.push(smallTasks.pop());
+        }
+      }
+      tasks[member] = assignedTasks;
+    });
+  });
+
+  return tasks;
+}
+
 
 async function loadMembersToDropdown() {
   const select = document.getElementById('memberSelect');
@@ -260,5 +327,40 @@ function setupBackToTopButton() {
     backBtn.addEventListener('click', () => {
       location.href = 'index.html';
     });
+  }
+}
+
+async function saveSettings() {
+  try {
+    // フォームの値を取得
+    const teamA = Array.from(document.querySelectorAll('#teamAInputs input'))
+      .map(input => input.value)
+      .filter(value => value.trim() !== '');
+    const teamB = Array.from(document.querySelectorAll('#teamBInputs input'))
+      .map(input => input.value)
+      .filter(value => value.trim() !== '');
+
+    const gmMode = document.querySelector('input[name="gmMode"]:checked').value;
+
+    const settings = {
+      teamA,
+      teamB,
+      gmMode,
+    };
+
+    if (gmMode === 'no') {
+      // GM無しモードの設定を取得
+      settings.largeTasks = document.getElementById('largeTasks').value.split('\n').map(task => task.trim()).filter(task => task);
+      settings.smallTasks = document.getElementById('smallTasks').value.split('\n').map(task => task.trim()).filter(task => task);
+      settings.largeTaskCount = parseInt(document.getElementById('largeTaskCount').value, 10) || 0;
+      settings.smallTaskCount = parseInt(document.getElementById('smallTaskCount').value, 10) || 0;
+    }
+
+    await fetchToServer('save-settings', settings);
+
+    // TOP画面に戻る
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('設定の保存に失敗しました:', error.message);
   }
 }

@@ -92,5 +92,23 @@ app.delete('/api/reset-settings', async (req, res) => {
   }
 });
 
+app.post('/save-settings', async (req, res) => {
+  try {
+    const settings = req.body;
+
+    // タスク割り振りロジック（例）
+    if (settings.gmMode === 'no') {
+      const { largeTasks, smallTasks, largeTaskCount, smallTaskCount, teamA, teamB } = settings;
+      settings.assignedTasks = assignTasks([...teamA, ...teamB], largeTasks, smallTasks, largeTaskCount, smallTaskCount);
+    }
+
+    await db.collection('settings').updateOne({}, { $set: settings }, { upsert: true });
+    res.send({ success: true });
+  } catch (error) {
+    res.status(500).send({ error: '設定の保存に失敗しました' });
+  }
+});
+
+
 // サーバー起動
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
