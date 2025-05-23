@@ -54,6 +54,19 @@ app.post('/api/members', async (req, res) => {
   }
 });
 
+app.get('/api/get-settings', (req, res) => {
+  // 設定情報を返す処理
+  res.json({
+    teamA: ['Alice', 'Bob', 'Charlie'],
+    teamB: ['Dave', 'Eve', 'Frank'],
+    gmMode: true,
+    tasks: {
+      largeTasks: ['Task1', 'Task2'],
+      smallTasks: ['Task3', 'Task4']
+    }
+  });
+});
+
 app.delete('/api/members', async (req, res) => {
   try {
     await Member.deleteMany();
